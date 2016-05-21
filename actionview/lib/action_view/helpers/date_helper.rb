@@ -911,9 +911,13 @@ module ActionView
 
         # Build full select tag from date type and options.
         def build_options_and_select(type, selected, options = {})
-          build_select(type, build_options(selected, options))
+          # raise options.inspect 
+          if type == :year
+            build_select(type, build_thai_year_options(selected, options))
+          else
+            build_select(type, build_options(selected, options))
+          end
         end
-
         # Build select option HTML from date value and options.
         #  build_options(15, start: 1, end: 31)
         #  => "<option value="1">1</option>
@@ -953,6 +957,32 @@ module ActionView
 
           (select_options.join("\n") + "\n").html_safe
         end
+
+        def build_thai_year_options(selected, options = {})
+          # raise "fuck u"
+          # raise selected.inspect
+          options = {
+            leading_zeros: true, ampm: false, use_two_digit_numbers: false
+          }.merge!(options)
+
+          start         = (options.delete(:start) || 0) + 543
+          stop          = (options.delete(:end) || 59) + 543
+          step          = options.delete(:step) || 1
+          leading_zeros = options.delete(:leading_zeros)
+
+          select_options = []
+          start.step(stop, step) do |i|
+            value = leading_zeros ? sprintf("%02d", i) : i
+            tag_options = { :value => (value - 543) }
+            tag_options[:selected] = "selected" if selected == (value - 543)
+            text = options[:use_two_digit_numbers] ? sprintf("%02d", i) : value
+            text = options[:ampm] ? AMPM_TRANSLATION[i] : text
+            select_options << content_tag(:option, text, tag_options)
+          end
+
+          (select_options.join("\n") + "\n").html_safe
+        end
+
 
         # Builds select tag from date type and HTML select options.
         #  build_select(:month, "<option value="1">January</option>...")
